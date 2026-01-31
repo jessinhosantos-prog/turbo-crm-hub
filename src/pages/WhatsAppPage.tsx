@@ -1,75 +1,67 @@
 import { useState } from 'react';
-import { useWhatsApp } from '@/hooks/useWhatsApp';
-import { ConversationList } from '@/components/whatsapp/ConversationList';
-import { ChatWindow } from '@/components/whatsapp/ChatWindow';
-import { TemplatePanel } from '@/components/whatsapp/TemplatePanel';
-import { NewConversationDialog } from '@/components/whatsapp/NewConversationDialog';
+import { useEvolutionAPI, EvolutionChat } from '@/hooks/useEvolutionAPI';
+import { QRCodeConnection } from '@/components/whatsapp/QRCodeConnection';
+import { EvolutionChatList } from '@/components/whatsapp/EvolutionChatList';
+import { EvolutionChatWindow } from '@/components/whatsapp/EvolutionChatWindow';
+import { Loader2 } from 'lucide-react';
 
 export default function WhatsAppPage() {
   const {
-    conversations,
-    messages,
-    templates,
-    selectedConversation,
-    setSelectedConversation,
-    sendMessage,
-    createConversation,
-    createTemplate,
+    isConnected,
+    isConnecting,
+    qrCode,
+    chats,
     loading,
-  } = useWhatsApp();
+    connect,
+    disconnect,
+    fetchMessages,
+    sendMessage,
+  } = useEvolutionAPI();
 
-  const [showNewConversation, setShowNewConversation] = useState(false);
-
-  const currentConversation = conversations.find(
-    (c) => c.id === selectedConversation
-  );
-
-  const handleSendMessage = (text: string) => {
-    if (selectedConversation) {
-      sendMessage(selectedConversation, text);
-    }
-  };
-
-  const handleUseTemplate = (content: string) => {
-    if (selectedConversation) {
-      sendMessage(selectedConversation, content);
-    }
-  };
+  const [selectedChat, setSelectedChat] = useState<EvolutionChat | null>(null);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Carregando...</p>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
+  // Se não está conectado, mostra a tela de conexão
+  if (!isConnected) {
+    return (
+      <div className="flex items-center justify-center h-full p-6">
+        <div className="w-full max-w-md">
+          <QRCodeConnection
+            isConnected={isConnected}
+            isConnecting={isConnecting}
+            qrCode={qrCode}
+            onConnect={connect}
+            onDisconnect={disconnect}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Conectado - mostra a interface de chat
   return (
-    <>
-      <div className="h-full flex overflow-hidden">
-        <ConversationList
-          conversations={conversations}
-          selectedId={selectedConversation}
-          onSelect={setSelectedConversation}
-          onNewConversation={() => setShowNewConversation(true)}
-        />
-        <ChatWindow
-          conversation={currentConversation || null}
-          messages={messages}
-          onSendMessage={handleSendMessage}
-        />
-        <TemplatePanel
-          templates={templates}
-          onCreateTemplate={createTemplate}
-          onUseTemplate={handleUseTemplate}
+    <div className="h-full flex overflow-hidden rounded-lg border bg-card">
+      <div className="w-80 border-r flex-shrink-0">
+        <EvolutionChatList
+          chats={chats}
+          selectedId={selectedChat?.id || null}
+          onSelect={setSelectedChat}
         />
       </div>
-
-      <NewConversationDialog
-        open={showNewConversation}
-        onOpenChange={setShowNewConversation}
-        onCreateConversation={createConversation}
-      />
-    </>
+      <div className="flex-1">
+        <EvolutionChatWindow
+          chat={selectedChat}
+          onSendMessage={sendMessage}
+          fetchMessages={fetchMessages}
+        />
+      </div>
+    </div>
   );
 }
