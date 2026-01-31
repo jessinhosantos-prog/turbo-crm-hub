@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -10,6 +10,7 @@ import {
   Settings,
   Building2,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import {
   Sidebar,
@@ -36,23 +37,19 @@ const menuItems = [
 
 export function AppSidebar() {
   const { state } = useSidebar();
-  const location = useLocation();
-  const currentPath = location.pathname;
   const collapsed = state === "collapsed";
 
-  const isActive = (path: string) => currentPath === path;
-  const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? "bg-primary text-primary-foreground font-medium" : "hover:bg-muted/50";
-
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible="icon">
+    <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon">
       <SidebarContent>
-        <div className="p-6">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-8 w-8 text-primary" />
+        <div className={cn("p-4", collapsed ? "px-2" : "p-6")}>
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+              <Building2 className="h-6 w-6 text-primary-foreground" />
+            </div>
             {!collapsed && (
               <div>
-                <h1 className="text-xl font-bold text-foreground">CRM TURBO</h1>
+                <h1 className="text-lg font-bold text-foreground leading-tight">CRM TURBO</h1>
                 <p className="text-xs text-muted-foreground">Gestão Inteligente</p>
               </div>
             )}
@@ -60,15 +57,29 @@ export function AppSidebar() {
         </div>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
+          {!collapsed && (
+            <SidebarGroupLabel className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Menu Principal
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="px-2 space-y-1">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavCls}>
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                  <SidebarMenuButton asChild className="h-11">
+                    <NavLink 
+                      to={item.url} 
+                      end 
+                      className={({ isActive }) => cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                        "text-sm font-medium",
+                        isActive 
+                          ? "bg-primary text-primary-foreground shadow-sm" 
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                      )}
+                    >
+                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                      {!collapsed && <span className="truncate">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
