@@ -72,7 +72,7 @@ const App = () => (
                         <SidebarTrigger className="mr-4" />
                         <div className="flex-1" />
                       </header>
-                      <div className="flex-1 p-6">
+                      <div className="flex-1 p-6 min-h-0">
                         <Routes>
                           <Route path="/" element={<Index />} />
                           <Route path="/pipeline" element={<PipelinePage />} />

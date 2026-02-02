@@ -22,7 +22,6 @@ export const EvolutionChatWindow = ({
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -33,9 +32,7 @@ export const EvolutionChatWindow = ({
     }
   }, [chat]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  // NOTE: removido auto-scroll (scrollIntoView) para evitar “pulo” de scroll ao trocar de conversa.
 
   const loadMessages = async () => {
     if (!chat) return;
@@ -247,7 +244,6 @@ export const EvolutionChatWindow = ({
                 </div>
               </div>
             ))}
-            <div ref={messagesEndRef} />
           </div>
         ) : (
           <div className="flex items-center justify-center h-32 text-wa-text-muted">
