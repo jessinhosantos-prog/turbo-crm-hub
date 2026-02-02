@@ -8,6 +8,7 @@ export interface EvolutionChat {
   name?: string;
   profilePicUrl?: string;
   lastMessage?: string;
+  lastMessageTimestamp?: number;
   unreadCount?: number;
 }
 

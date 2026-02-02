@@ -60,20 +60,27 @@ All colors MUST be HSL.
     --shadow-medium: 0 8px 24px hsl(var(--primary) / 0.12);
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* WhatsApp PRD Design Tokens */
+    --wa-primary: 14 100% 60%;
+    --wa-primary-foreground: 0 0% 100%;
+    --wa-danger: 350 100% 55%;
+    --wa-danger-foreground: 0 0% 100%;
+    --wa-info: 187 100% 42%;
+    --wa-info-foreground: 0 0% 100%;
+    --wa-bg-main: 0 0% 100%;
+    --wa-bg-subtle: 33 100% 94%;
+    --wa-surface: 0 0% 96%;
+    --wa-border: 0 0% 80%;
+    --wa-text-main: 0 0% 20%;
+    --wa-text-muted: 0 0% 60%;
   }
 
   .dark {
