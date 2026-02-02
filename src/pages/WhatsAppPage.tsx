@@ -4,7 +4,7 @@ import { QRCodeConnection } from '@/components/whatsapp/QRCodeConnection';
 import { EvolutionChatList } from '@/components/whatsapp/EvolutionChatList';
 import { EvolutionChatWindow } from '@/components/whatsapp/EvolutionChatWindow';
 import { InstanceSelector } from '@/components/whatsapp/InstanceSelector';
-import { Loader2, RefreshCw, Settings, Bell, Smartphone } from 'lucide-react';
+import { Loader2, Settings, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function WhatsAppPage() {
@@ -27,9 +27,6 @@ export default function WhatsAppPage() {
 
   const [selectedChat, setSelectedChat] = useState<EvolutionChat | null>(null);
 
-  // Count total unread messages
-  const totalUnread = chats.reduce((acc, chat) => acc + (chat.unreadCount || 0), 0);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-wa-bg-main">
@@ -41,7 +38,6 @@ export default function WhatsAppPage() {
     );
   }
 
-  // If not connected, show connection screen
   if (!isConnected) {
     return (
       <div className="flex items-center justify-center h-full p-6 bg-wa-bg-main">
@@ -54,7 +50,6 @@ export default function WhatsAppPage() {
               onRefresh={fetchInstances}
             />
           )}
-          
           <QRCodeConnection
             isConnected={isConnected}
             isConnecting={isConnecting}
@@ -67,73 +62,46 @@ export default function WhatsAppPage() {
     );
   }
 
-  // Connected - show chat interface
   return (
-    <div className="h-full min-h-0 flex flex-col overflow-hidden bg-wa-bg-main">
-      {/* Main Content - Two Column Layout */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Sidebar - Contact List */}
-        <aside className="w-80 min-h-0 border-r border-wa-border flex flex-col bg-wa-bg-main">
-          {/* Sidebar Header with Profile */}
-          <div className="px-3 py-2.5 border-b border-wa-border flex items-center justify-between bg-wa-bg-main">
-            <button
-              type="button"
-              className="flex items-center gap-2 max-w-[210px] rounded-md border border-wa-border bg-wa-surface px-3 py-1.5 text-sm text-wa-text-main"
-            >
-              <Smartphone className="h-4 w-4 text-wa-text-muted" />
-              <span className="truncate">
-                {currentInstance?.profileName || currentInstance?.name}
-              </span>
-            </button>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={fetchChats}
-                className="h-8 w-8 text-wa-text-muted hover:text-wa-text-main hover:bg-wa-surface"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-              {/* Notification bell with badge */}
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="h-8 w-8 relative text-wa-text-muted hover:text-wa-text-main hover:bg-wa-surface"
-              >
-                <Bell className="h-4 w-4" />
-                {totalUnread > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 flex items-center justify-center rounded-full bg-wa-primary text-wa-primary-foreground text-[9px] font-bold">
-                    {totalUnread > 99 ? '99+' : totalUnread}
-                  </span>
-                )}
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="h-8 w-8 text-wa-text-muted hover:text-wa-text-main hover:bg-wa-surface"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+    <div className="absolute inset-0 flex bg-wa-bg-main rounded-lg overflow-hidden border border-wa-border shadow-sm">
+      {/* Sidebar */}
+      <aside className="w-80 flex flex-col border-r border-wa-border bg-wa-bg-main">
+        {/* Sidebar Header */}
+        <div className="shrink-0 px-3 py-2 border-b border-wa-border flex items-center justify-between">
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-md border border-wa-border bg-wa-surface px-3 py-1.5 text-sm text-wa-text-main truncate max-w-[200px]"
+          >
+            <Smartphone className="h-4 w-4 shrink-0 text-wa-text-muted" />
+            <span className="truncate">{currentInstance?.profileName || currentInstance?.name}</span>
+          </button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0 text-wa-text-muted hover:text-wa-text-main hover:bg-wa-surface"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        </div>
 
-          {/* Chat List - takes remaining space */}
+        {/* Chat List */}
+        <div className="flex-1 overflow-y-auto">
           <EvolutionChatList
             chats={chats}
             selectedId={selectedChat?.id || null}
             onSelect={setSelectedChat}
           />
-        </aside>
+        </div>
+      </aside>
 
-        {/* Main Chat Area */}
-        <main className="flex-1 flex flex-col min-w-0">
-          <EvolutionChatWindow
-            chat={selectedChat}
-            onSendMessage={sendMessage}
-            fetchMessages={fetchMessages}
-          />
-        </main>
-      </div>
+      {/* Main Chat Area */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <EvolutionChatWindow
+          chat={selectedChat}
+          onSendMessage={sendMessage}
+          fetchMessages={fetchMessages}
+        />
+      </main>
     </div>
   );
 }
