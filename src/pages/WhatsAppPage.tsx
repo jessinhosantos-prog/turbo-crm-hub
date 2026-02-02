@@ -4,9 +4,8 @@ import { QRCodeConnection } from '@/components/whatsapp/QRCodeConnection';
 import { EvolutionChatList } from '@/components/whatsapp/EvolutionChatList';
 import { EvolutionChatWindow } from '@/components/whatsapp/EvolutionChatWindow';
 import { InstanceSelector } from '@/components/whatsapp/InstanceSelector';
-import { Loader2, RefreshCw, Settings, Bell } from 'lucide-react';
+import { Loader2, RefreshCw, Settings, Bell, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function WhatsAppPage() {
   const {
@@ -70,27 +69,31 @@ export default function WhatsAppPage() {
 
   // Connected - show chat interface
   return (
-    <div className="h-full flex flex-col bg-wa-bg-main">
+    <div className="h-full min-h-0 flex flex-col overflow-hidden bg-wa-bg-main">
       {/* Main Content - Two Column Layout */}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Sidebar - Contact List */}
-        <aside className="w-80 border-r border-wa-border flex flex-col bg-wa-bg-main">
+        <aside className="w-80 min-h-0 border-r border-wa-border flex flex-col bg-wa-bg-main">
           {/* Sidebar Header with Profile */}
           <div className="px-3 py-2.5 border-b border-wa-border flex items-center justify-between bg-wa-bg-main">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-9 w-9">
-                {currentInstance?.profilePicUrl && (
-                  <AvatarImage src={currentInstance.profilePicUrl} alt="Profile" />
-                )}
-                <AvatarFallback className="bg-wa-surface text-wa-text-main text-sm font-semibold">
-                  {currentInstance?.profileName?.[0]?.toUpperCase() || 'W'}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-sm font-medium text-wa-text-main">
+            <button
+              type="button"
+              className="flex items-center gap-2 max-w-[210px] rounded-md border border-wa-border bg-wa-surface px-3 py-1.5 text-sm text-wa-text-main"
+            >
+              <Smartphone className="h-4 w-4 text-wa-text-muted" />
+              <span className="truncate">
                 {currentInstance?.profileName || currentInstance?.name}
               </span>
-            </div>
+            </button>
             <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={fetchChats}
+                className="h-8 w-8 text-wa-text-muted hover:text-wa-text-main hover:bg-wa-surface"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
               {/* Notification bell with badge */}
               <Button 
                 variant="ghost" 
