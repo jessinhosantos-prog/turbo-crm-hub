@@ -68,8 +68,8 @@ export default function WhatsAppPage() {
   // Conectado - mostra a interface de chat
   return (
     <div className="h-full flex flex-col overflow-hidden rounded-lg border bg-card">
-      {/* Header with instance info */}
-      <div className="flex items-center justify-between p-3 border-b bg-muted/30">
+      {/* Header with instance info - fixed */}
+      <div className="flex items-center justify-between p-3 border-b bg-muted/30 shrink-0">
         <div className="flex items-center gap-3">
           {currentInstance?.profilePicUrl && (
             <img 
@@ -97,16 +97,18 @@ export default function WhatsAppPage() {
         </div>
       </div>
       
-      {/* Chat interface */}
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-80 border-r flex-shrink-0">
+      {/* Chat interface - fills remaining space */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        {/* Chat list - independent scroll */}
+        <div className="w-80 border-r flex-shrink-0 h-full overflow-hidden">
           <EvolutionChatList
             chats={chats}
             selectedId={selectedChat?.id || null}
             onSelect={setSelectedChat}
           />
         </div>
-        <div className="flex-1">
+        {/* Chat window - independent scroll */}
+        <div className="flex-1 h-full overflow-hidden">
           <EvolutionChatWindow
             chat={selectedChat}
             onSendMessage={sendMessage}
