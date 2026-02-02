@@ -1,7 +1,6 @@
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { EvolutionChat } from '@/hooks/useEvolutionAPI';
@@ -18,6 +17,7 @@ export const EvolutionChatList = ({
   onSelect,
 }: EvolutionChatListProps) => {
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<'all' | 'mine'>('all');
 
   const filteredChats = chats.filter(
     (chat) =>
@@ -29,19 +29,58 @@ export const EvolutionChatList = ({
     return jid.replace('@s.whatsapp.net', '').replace('@g.us', '');
   };
 
+  const formatTimestamp = (timestamp?: number) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp * 1000);
+    const today = new Date();
+    
+    if (date.toDateString() === today.toDateString()) {
+      return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  };
+
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden bg-wa-surface">
       {/* Header with search - fixed */}
-      <div className="p-4 border-b space-y-3 shrink-0">
-        <h2 className="text-lg font-semibold">Conversas</h2>
+      <div className="p-4 border-b border-wa-border space-y-3 shrink-0 bg-wa-bg-main">
+        <h2 className="text-lg font-bold text-wa-text-main">Conversas</h2>
+        
+        {/* Search bar */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-wa-text-muted" />
           <Input
-            placeholder="Buscar conversa..."
+            placeholder="Pesquisar por nome ou número"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 h-9 bg-wa-bg-main border-wa-border rounded-md text-sm placeholder:text-wa-text-muted"
           />
+        </div>
+
+        {/* Filter pills */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setFilter('all')}
+            className={cn(
+              'px-4 py-1.5 rounded-full text-xs font-medium transition-colors',
+              filter === 'all'
+                ? 'bg-wa-primary text-wa-primary-foreground'
+                : 'bg-wa-surface text-wa-text-main hover:bg-wa-border'
+            )}
+          >
+            Tudo
+          </button>
+          <button
+            onClick={() => setFilter('mine')}
+            className={cn(
+              'px-4 py-1.5 rounded-full text-xs font-medium transition-colors',
+              filter === 'mine'
+                ? 'bg-wa-primary text-wa-primary-foreground'
+                : 'bg-wa-surface text-wa-text-main hover:bg-wa-border'
+            )}
+          >
+            Minhas
+          </button>
         </div>
       </div>
 
@@ -53,41 +92,61 @@ export const EvolutionChatList = ({
               key={chat.id}
               onClick={() => onSelect(chat)}
               className={cn(
-                'w-full p-4 flex items-start gap-3 border-b hover:bg-accent transition-colors text-left',
-                selectedId === chat.id && 'bg-accent'
+                'w-full px-4 py-3 flex items-center gap-3 border-b border-wa-border transition-colors text-left relative',
+                selectedId === chat.id
+                  ? 'bg-wa-bg-main border-l-4 border-l-wa-info'
+                  : 'bg-wa-bg-main hover:bg-wa-surface'
               )}
             >
-              <Avatar className="h-12 w-12 flex-shrink-0">
-                {chat.profilePicUrl && (
-                  <AvatarImage src={chat.profilePicUrl} alt={chat.name} />
-                )}
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {chat.name?.[0]?.toUpperCase() || '?'}
-                </AvatarFallback>
-              </Avatar>
+              {/* Avatar with online indicator */}
+              <div className="relative flex-shrink-0">
+                <Avatar className="h-12 w-12">
+                  {chat.profilePicUrl && (
+                    <AvatarImage src={chat.profilePicUrl} alt={chat.name} />
+                  )}
+                  <AvatarFallback className="bg-wa-primary text-wa-primary-foreground font-semibold">
+                    {chat.name?.[0]?.toUpperCase() || '?'}
+                  </AvatarFallback>
+                </Avatar>
+                {/* Online indicator */}
+                <span className="absolute bottom-0 right-0 w-3 h-3 bg-wa-info rounded-full border-2 border-wa-bg-main" />
+              </div>
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium truncate">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className={cn(
+                    'text-sm truncate text-wa-text-main',
+                    chat.unreadCount && chat.unreadCount > 0 ? 'font-bold' : 'font-medium'
+                  )}>
                     {chat.name || formatPhone(chat.remoteJid)}
                   </span>
+                  <span className="text-xs text-wa-text-muted ml-2 flex-shrink-0">
+                    {formatTimestamp(chat.lastMessageTimestamp)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  {chat.lastMessage && (
+                    <p className={cn(
+                      'text-xs truncate',
+                      chat.unreadCount && chat.unreadCount > 0 
+                        ? 'text-wa-text-main font-medium' 
+                        : 'text-wa-text-muted'
+                    )}>
+                      {chat.lastMessage}
+                    </p>
+                  )}
                   {chat.unreadCount && chat.unreadCount > 0 && (
-                    <Badge variant="default" className="ml-2 h-5 min-w-5 px-1.5">
+                    <span className="ml-2 flex-shrink-0 h-5 min-w-5 px-1.5 flex items-center justify-center rounded-full bg-wa-primary text-wa-primary-foreground text-xs font-bold">
                       {chat.unreadCount}
-                    </Badge>
+                    </span>
                   )}
                 </div>
-                {chat.lastMessage && (
-                  <p className="text-sm text-muted-foreground truncate">
-                    {chat.lastMessage}
-                  </p>
-                )}
               </div>
             </button>
           ))
         ) : (
-          <div className="p-8 text-center text-muted-foreground">
-            <p>Nenhuma conversa encontrada</p>
+          <div className="p-8 text-center text-wa-text-muted">
+            <p className="text-sm">Nenhuma conversa encontrada</p>
           </div>
         )}
       </div>

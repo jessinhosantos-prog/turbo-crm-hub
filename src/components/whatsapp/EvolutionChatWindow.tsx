@@ -1,219 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, MessageCircle, Play, Pause, Download, FileText, Image as ImageIcon, Video, Mic } from 'lucide-react';
+import { Send, Loader2, MessageCircle, Paperclip, Smile, Mic, ExternalLink, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { EvolutionChat, EvolutionMessage } from '@/hooks/useEvolutionAPI';
 import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AudioPlayer } from './AudioPlayer';
+import { MediaMessage } from './MediaMessage';
 
 interface EvolutionChatWindowProps {
   chat: EvolutionChat | null;
   onSendMessage: (number: string, text: string) => Promise<any>;
   fetchMessages: (remoteJid: string) => Promise<EvolutionMessage[]>;
 }
-
-// Audio player component
-const AudioMessage = ({ url }: { url: string }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const audioRef = useRef<HTMLAudioElement>(null);
-
-  const togglePlay = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  return (
-    <div className="flex items-center gap-2 min-w-[200px]">
-      <audio
-        ref={audioRef}
-        src={url}
-        onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
-        onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
-        onEnded={() => setIsPlaying(false)}
-      />
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 shrink-0"
-        onClick={togglePlay}
-      >
-        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-      </Button>
-      <div className="flex-1">
-        <div className="h-1 bg-muted rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary transition-all"
-            style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
-          />
-        </div>
-        <span className="text-xs opacity-70">
-          {formatTime(currentTime)} / {formatTime(duration)}
-        </span>
-      </div>
-    </div>
-  );
-};
-
-// Media message renderer
-const MediaMessage = ({ message, messageType }: { message: any; messageType: string }) => {
-  // Extract media URL based on message type
-  const getMediaUrl = () => {
-    if (message?.imageMessage?.url) return message.imageMessage.url;
-    if (message?.videoMessage?.url) return message.videoMessage.url;
-    if (message?.audioMessage?.url) return message.audioMessage.url;
-    if (message?.documentMessage?.url) return message.documentMessage.url;
-    if (message?.stickerMessage?.url) return message.stickerMessage.url;
-    return null;
-  };
-
-  const mediaUrl = getMediaUrl();
-  const caption = message?.imageMessage?.caption || 
-                  message?.videoMessage?.caption || 
-                  message?.documentMessage?.fileName ||
-                  '';
-
-  switch (messageType) {
-    case 'imageMessage':
-      return (
-        <div className="space-y-1">
-          {mediaUrl ? (
-            <img 
-              src={mediaUrl} 
-              alt="Imagem" 
-              className="max-w-[250px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-              onClick={() => window.open(mediaUrl, '_blank')}
-            />
-          ) : (
-            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-              <ImageIcon className="h-5 w-5" />
-              <span className="text-sm">📷 Imagem</span>
-            </div>
-          )}
-          {caption && <p className="text-sm">{caption}</p>}
-        </div>
-      );
-
-    case 'videoMessage':
-      return (
-        <div className="space-y-1">
-          {mediaUrl ? (
-            <video 
-              src={mediaUrl} 
-              controls 
-              className="max-w-[250px] rounded-lg"
-            />
-          ) : (
-            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-              <Video className="h-5 w-5" />
-              <span className="text-sm">🎥 Vídeo</span>
-            </div>
-          )}
-          {caption && <p className="text-sm">{caption}</p>}
-        </div>
-      );
-
-    case 'audioMessage':
-      return mediaUrl ? (
-        <AudioMessage url={mediaUrl} />
-      ) : (
-        <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg min-w-[150px]">
-          <Mic className="h-5 w-5" />
-          <span className="text-sm">🎵 Áudio</span>
-        </div>
-      );
-
-    case 'documentMessage':
-      const fileName = message?.documentMessage?.fileName || 'Documento';
-      return (
-        <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-          <FileText className="h-5 w-5" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{fileName}</p>
-            <p className="text-xs opacity-70">Documento</p>
-          </div>
-          {mediaUrl && (
-            <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-              <a href={mediaUrl} target="_blank" rel="noopener noreferrer" download>
-                <Download className="h-4 w-4" />
-              </a>
-            </Button>
-          )}
-        </div>
-      );
-
-    case 'stickerMessage':
-      return mediaUrl ? (
-        <img 
-          src={mediaUrl} 
-          alt="Sticker" 
-          className="w-24 h-24 object-contain"
-        />
-      ) : (
-        <div className="flex items-center justify-center w-20 h-20 bg-muted/50 rounded-lg">
-          <span className="text-2xl">🎨</span>
-        </div>
-      );
-
-    case 'contactMessage':
-      const displayName = message?.contactMessage?.displayName || 'Contato';
-      return (
-        <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
-            <span className="text-lg">👤</span>
-          </div>
-          <div>
-            <p className="text-sm font-medium">{displayName}</p>
-            <p className="text-xs opacity-70">Contato compartilhado</p>
-          </div>
-        </div>
-      );
-
-    case 'locationMessage':
-      const lat = message?.locationMessage?.degreesLatitude;
-      const lng = message?.locationMessage?.degreesLongitude;
-      return (
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-            <span className="text-xl">📍</span>
-            <div>
-              <p className="text-sm font-medium">Localização</p>
-              {lat && lng && (
-                <a 
-                  href={`https://www.google.com/maps?q=${lat},${lng}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline"
-                >
-                  Abrir no Google Maps
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-
-    default:
-      return (
-        <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-          <FileText className="h-5 w-5" />
-          <span className="text-sm">[Mídia não suportada]</span>
-        </div>
-      );
-  }
-};
 
 export const EvolutionChatWindow = ({
   chat,
@@ -225,6 +23,7 @@ export const EvolutionChatWindow = ({
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (chat) {
@@ -235,7 +34,6 @@ export const EvolutionChatWindow = ({
   }, [chat]);
 
   useEffect(() => {
-    // Scroll to bottom when messages change
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -263,13 +61,18 @@ export const EvolutionChatWindow = ({
     try {
       const number = chat.remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '');
       await onSendMessage(number, text);
-      
-      // Reload messages after sending
       await loadMessages();
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   };
 
@@ -292,7 +95,7 @@ export const EvolutionChatWindow = ({
       return <MediaMessage message={message} messageType={messageType} />;
     }
 
-    // Fallback for text in message object
+    // Fallback
     if (message?.conversation) {
       return <p className="text-sm whitespace-pre-wrap break-words">{message.conversation}</p>;
     }
@@ -301,10 +104,8 @@ export const EvolutionChatWindow = ({
       return <p className="text-sm whitespace-pre-wrap break-words">{message.extendedTextMessage.text}</p>;
     }
 
-    // Unknown message type
     return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <FileText className="h-4 w-4" />
+      <div className="flex items-center gap-2 text-wa-text-muted">
         <span className="text-sm">[{messageType || 'Mensagem'}]</span>
       </div>
     );
@@ -333,8 +134,7 @@ export const EvolutionChatWindow = ({
     }
     return date.toLocaleDateString('pt-BR', {
       day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
+      month: 'long',
     });
   };
 
@@ -350,29 +150,57 @@ export const EvolutionChatWindow = ({
 
   if (!chat) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-        <MessageCircle className="h-16 w-16 mb-4 opacity-50" />
-        <h3 className="text-lg font-medium">Selecione uma conversa</h3>
-        <p className="text-sm">Escolha uma conversa para visualizar as mensagens</p>
+      <div className="flex flex-col items-center justify-center h-full bg-wa-bg-subtle">
+        <div className="text-center space-y-4">
+          <div className="w-24 h-24 rounded-full bg-wa-surface flex items-center justify-center mx-auto">
+            <MessageCircle className="h-12 w-12 text-wa-text-muted" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-wa-text-main">Selecione uma conversa</h3>
+            <p className="text-sm text-wa-text-muted mt-1">Escolha uma conversa para visualizar as mensagens</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <div className="p-4 border-b bg-muted/30 shrink-0">
-        <h2 className="font-semibold">{chat.name || chat.remoteJid.split('@')[0]}</h2>
-        <p className="text-sm text-muted-foreground">
-          {chat.remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '')}
-        </p>
+    <div className="flex flex-col h-full overflow-hidden bg-wa-bg-subtle">
+      {/* Chat Header */}
+      <div className="px-4 py-3 border-b border-wa-border bg-wa-bg-main shrink-0 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-10 w-10">
+            {chat.profilePicUrl && (
+              <AvatarImage src={chat.profilePicUrl} alt={chat.name} />
+            )}
+            <AvatarFallback className="bg-wa-primary text-wa-primary-foreground font-semibold">
+              {chat.name?.[0]?.toUpperCase() || '?'}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <h2 className="font-semibold text-wa-text-main text-sm">
+              {chat.name || chat.remoteJid.split('@')[0]}
+            </h2>
+            <p className="text-xs text-wa-text-muted">
+              {chat.remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '')}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-9 w-9 text-wa-text-muted hover:text-wa-text-main hover:bg-wa-surface">
+            <ExternalLink className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9 text-wa-text-muted hover:text-wa-text-main hover:bg-wa-surface">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
-      {/* Messages - scrollable container */}
+      {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 overscroll-contain">
         {loading ? (
           <div className="flex items-center justify-center h-32">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <Loader2 className="h-6 w-6 animate-spin text-wa-primary" />
           </div>
         ) : Object.keys(groupedMessages).length > 0 ? (
           <div className="space-y-4">
@@ -380,7 +208,7 @@ export const EvolutionChatWindow = ({
               <div key={date}>
                 {/* Date separator */}
                 <div className="flex items-center justify-center my-4">
-                  <span className="px-3 py-1 bg-muted rounded-full text-xs text-muted-foreground">
+                  <span className="px-3 py-1 bg-wa-bg-main rounded-lg text-xs text-wa-text-muted shadow-sm">
                     {date}
                   </span>
                 </div>
@@ -390,20 +218,20 @@ export const EvolutionChatWindow = ({
                     <div
                       key={msg.key?.id || msg.id}
                       className={cn(
-                        'max-w-[75%] p-3 rounded-lg',
+                        'max-w-[70%] p-3 rounded-xl shadow-sm',
                         msg.key?.fromMe
-                          ? 'ml-auto bg-primary text-primary-foreground'
-                          : 'bg-muted'
+                          ? 'ml-auto bg-wa-primary text-wa-primary-foreground rounded-br-sm'
+                          : 'bg-wa-bg-main text-wa-text-main rounded-bl-sm'
                       )}
                     >
                       {/* Sender name for groups */}
                       {!msg.key?.fromMe && msg.pushName && chat.remoteJid.includes('@g.us') && (
-                        <p className="text-xs font-medium mb-1 opacity-80">{msg.pushName}</p>
+                        <p className="text-xs font-semibold mb-1 text-wa-info">{msg.pushName}</p>
                       )}
                       {getMessageContent(msg)}
                       <span className={cn(
-                        'text-xs mt-1 block text-right',
-                        msg.key?.fromMe ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                        'text-[10px] mt-1 block text-right font-mono',
+                        msg.key?.fromMe ? 'text-wa-primary-foreground/70' : 'text-wa-text-muted'
                       )}>
                         {formatTime(msg.messageTimestamp)}
                       </span>
@@ -415,36 +243,71 @@ export const EvolutionChatWindow = ({
             <div ref={messagesEndRef} />
           </div>
         ) : (
-          <div className="flex items-center justify-center h-32 text-muted-foreground">
+          <div className="flex items-center justify-center h-32 text-wa-text-muted">
             <p className="text-sm">Nenhuma mensagem encontrada</p>
           </div>
         )}
       </div>
 
-      {/* Input - fixed at bottom */}
-      <div className="p-4 border-t shrink-0 bg-background">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSend();
-          }}
-          className="flex gap-2"
-        >
-          <Input
-            placeholder="Digite uma mensagem..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            disabled={sending}
-            className="flex-1"
-          />
-          <Button type="submit" disabled={!newMessage.trim() || sending}>
-            {sending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
+      {/* Input Area */}
+      <div className="p-3 border-t border-wa-border shrink-0 bg-wa-bg-main">
+        <div className="flex items-end gap-2">
+          {/* Attachment button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 shrink-0 text-wa-text-muted hover:text-wa-text-main hover:bg-wa-surface"
+          >
+            <Paperclip className="h-5 w-5" />
           </Button>
-        </form>
+
+          {/* Emoji button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 shrink-0 text-wa-text-muted hover:text-wa-text-main hover:bg-wa-surface"
+          >
+            <Smile className="h-5 w-5" />
+          </Button>
+
+          {/* Message input */}
+          <div className="flex-1 relative">
+            <textarea
+              ref={textareaRef}
+              placeholder="Digite uma mensagem"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={sending}
+              rows={1}
+              className="w-full px-4 py-2.5 bg-wa-surface border border-wa-border rounded-lg text-sm text-wa-text-main placeholder:text-wa-text-muted resize-none focus:outline-none focus:ring-2 focus:ring-wa-info focus:border-transparent"
+              style={{ minHeight: '42px', maxHeight: '120px' }}
+            />
+          </div>
+
+          {/* Send or Mic button */}
+          {newMessage.trim() ? (
+            <Button 
+              onClick={handleSend}
+              disabled={sending}
+              className="h-10 w-10 shrink-0 rounded-full bg-wa-primary hover:bg-wa-primary/90"
+            >
+              {sending ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 shrink-0 text-wa-danger hover:text-wa-danger hover:bg-wa-danger/10"
+            >
+              <Mic className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
