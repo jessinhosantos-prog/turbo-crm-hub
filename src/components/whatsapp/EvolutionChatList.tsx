@@ -41,7 +41,7 @@ export const EvolutionChatList = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-wa-bg-main">
+    <div className="flex flex-col flex-1 min-h-0 bg-wa-bg-main">
       {/* Header with search */}
       <div className="p-3 border-b border-wa-border space-y-3 bg-wa-bg-main">
         {/* Search bar */}

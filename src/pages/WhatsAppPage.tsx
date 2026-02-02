@@ -114,14 +114,12 @@ export default function WhatsAppPage() {
             </div>
           </div>
 
-          {/* Chat List */}
-          <div className="flex-1 overflow-y-auto">
-            <EvolutionChatList
-              chats={chats}
-              selectedId={selectedChat?.id || null}
-              onSelect={setSelectedChat}
-            />
-          </div>
+          {/* Chat List - takes remaining space */}
+          <EvolutionChatList
+            chats={chats}
+            selectedId={selectedChat?.id || null}
+            onSelect={setSelectedChat}
+          />
         </aside>
 
         {/* Main Chat Area */}
