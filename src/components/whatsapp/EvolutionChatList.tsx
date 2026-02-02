@@ -1,6 +1,5 @@
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -31,9 +30,10 @@ export const EvolutionChatList = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 border-b space-y-3">
-        <h2 className="text-lg font-semibold">Conversas do WhatsApp</h2>
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Header with search - fixed */}
+      <div className="p-4 border-b space-y-3 shrink-0">
+        <h2 className="text-lg font-semibold">Conversas</h2>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -45,7 +45,8 @@ export const EvolutionChatList = ({
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
+      {/* Scrollable chat list */}
+      <div className="flex-1 overflow-y-auto overscroll-contain">
         {filteredChats.length > 0 ? (
           filteredChats.map((chat) => (
             <button
@@ -89,7 +90,7 @@ export const EvolutionChatList = ({
             <p>Nenhuma conversa encontrada</p>
           </div>
         )}
-      </ScrollArea>
+      </div>
     </div>
   );
 };
