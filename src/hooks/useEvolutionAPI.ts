@@ -375,40 +375,61 @@ export const useEvolutionAPI = (defaultInstanceName = 'crm-turbo') => {
 
   // Initialize on mount
   useEffect(() => {
+    let mounted = true;
+    
     const init = async () => {
+      if (!mounted) return;
       setLoading(true);
       await fetchInstances();
-      setLoading(false);
+      if (mounted) {
+        setLoading(false);
+      }
     };
     
     init();
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Poll for connection status when showing QR code
   useEffect(() => {
-    if (!isConnecting || !qrCode) return;
+    let interval: ReturnType<typeof setInterval> | null = null;
     
-    const interval = setInterval(async () => {
-      const instanceList = await fetchInstances();
-      const connected = instanceList.find(i => i.connectionStatus === 'open');
-      if (connected) {
-        setIsConnecting(false);
-        toast({
-          title: 'Conectado!',
-          description: `WhatsApp conectado: ${connected.profileName || connected.name}`,
-        });
+    if (isConnecting && qrCode) {
+      interval = setInterval(async () => {
+        const instanceList = await fetchInstances();
+        const connected = instanceList.find(i => i.connectionStatus === 'open');
+        if (connected) {
+          setIsConnecting(false);
+          toast({
+            title: 'Conectado!',
+            description: `WhatsApp conectado: ${connected.profileName || connected.name}`,
+          });
+        }
+      }, 3000);
+    }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
       }
-    }, 3000);
-    
-    return () => clearInterval(interval);
+    };
   }, [isConnecting, qrCode, fetchInstances, toast]);
 
   // Fetch chats when connected
   useEffect(() => {
+    let mounted = true;
+    
     if (isConnected && currentInstance) {
       console.log('Auto-fetching chats - connected to:', currentInstance.name);
-      fetchChats();
+      fetchChats().catch(console.error);
     }
+    
+    return () => {
+      mounted = false;
+    };
   }, [isConnected, currentInstance, fetchChats]);
 
   return {
