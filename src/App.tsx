@@ -72,15 +72,15 @@ const App = () => (
                         <SidebarTrigger className="mr-4" />
                         <div className="flex-1" />
                       </header>
-                      <div className="flex-1 p-6 min-h-0">
+                      <div className="flex-1 relative">
                         <Routes>
-                          <Route path="/" element={<Index />} />
-                          <Route path="/pipeline" element={<PipelinePage />} />
-                          <Route path="/contacts" element={<ContactsPage />} />
-                          <Route path="/products" element={<ProductsPage />} />
-                          <Route path="/tasks" element={<TasksPage />} />
+                          <Route path="/" element={<div className="p-6"><Index /></div>} />
+                          <Route path="/pipeline" element={<div className="p-6"><PipelinePage /></div>} />
+                          <Route path="/contacts" element={<div className="p-6"><ContactsPage /></div>} />
+                          <Route path="/products" element={<div className="p-6"><ProductsPage /></div>} />
+                          <Route path="/tasks" element={<div className="p-6"><TasksPage /></div>} />
                           <Route path="/whatsapp" element={<WhatsAppPage />} />
-                          <Route path="*" element={<NotFound />} />
+                          <Route path="*" element={<div className="p-6"><NotFound /></div>} />
                         </Routes>
                       </div>
                     </main>
