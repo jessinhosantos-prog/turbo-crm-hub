@@ -312,21 +312,33 @@ export const useEvolutionAPI = (defaultInstanceName = 'crm-turbo') => {
     if (!isConnected || !currentInstance) return [];
     
     try {
+      console.log('Fetching messages for:', remoteJid);
       const response = await callEvolutionAPI('getMessages', currentInstance.name, { remoteJid });
+      
+      console.log('getMessages response:', response);
       
       if (response?.error) {
         console.error('Error fetching messages:', response.message);
         return [];
       }
       
-      let messages = [];
-      if (Array.isArray(response)) {
-        messages = response;
-      } else if (response?.messages) {
+      let messages: any[] = [];
+      
+      // Evolution API returns: { messages: { records: [...], total, pages, currentPage } }
+      if (response?.messages?.records && Array.isArray(response.messages.records)) {
+        messages = response.messages.records;
+      } else if (response?.messages && Array.isArray(response.messages)) {
         messages = response.messages;
+      } else if (Array.isArray(response)) {
+        messages = response;
       } else if (response?.data) {
         messages = response.data;
       }
+      
+      console.log('Parsed messages:', messages.length);
+      
+      // Sort by timestamp (oldest first for display)
+      messages.sort((a, b) => (a.messageTimestamp || 0) - (b.messageTimestamp || 0));
       
       return messages;
     } catch (error) {
