@@ -67,20 +67,20 @@ const App = () => (
                 <SidebarProvider>
                   <div className="min-h-screen flex w-full">
                     <AppSidebar />
-                    <main className="flex-1 flex flex-col">
-                      <header className="h-12 flex items-center border-b bg-background px-4">
-                        <SidebarTrigger className="mr-4" />
+                    <main className="flex-1 flex flex-col min-h-screen max-h-screen overflow-hidden">
+                      <header className="h-14 flex items-center bg-transparent px-4 shrink-0">
+                        <SidebarTrigger />
                         <div className="flex-1" />
                       </header>
-                      <div className="flex-1 relative">
+                      <div className="content-card mb-4 mr-4 flex flex-col min-h-0">
                         <Routes>
-                          <Route path="/" element={<div className="p-6"><Index /></div>} />
-                          <Route path="/pipeline" element={<div className="p-6"><PipelinePage /></div>} />
-                          <Route path="/contacts" element={<div className="p-6"><ContactsPage /></div>} />
-                          <Route path="/products" element={<div className="p-6"><ProductsPage /></div>} />
-                          <Route path="/tasks" element={<div className="p-6"><TasksPage /></div>} />
+                          <Route path="/" element={<div className="p-6 h-full overflow-y-auto"><Index /></div>} />
+                          <Route path="/pipeline" element={<div className="p-6 h-full overflow-y-auto"><PipelinePage /></div>} />
+                          <Route path="/contacts" element={<div className="p-6 h-full overflow-y-auto"><ContactsPage /></div>} />
+                          <Route path="/products" element={<div className="p-6 h-full overflow-y-auto"><ProductsPage /></div>} />
+                          <Route path="/tasks" element={<div className="p-6 h-full overflow-y-auto"><TasksPage /></div>} />
                           <Route path="/whatsapp" element={<WhatsAppPage />} />
-                          <Route path="*" element={<div className="p-6"><NotFound /></div>} />
+                          <Route path="*" element={<div className="p-6 h-full overflow-y-auto"><NotFound /></div>} />
                         </Routes>
                       </div>
                     </main>

@@ -150,123 +150,141 @@ export const EvolutionChatWindow = ({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-wa-bg-subtle relative">
+      {/* Background Wallpaper Pattern (Subtle Overlay) */}
+      <div
+        className="absolute inset-0 opacity-[0.05] pointer-events-none"
+        style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/cartographer.png")' }}
+      />
+
       {/* Header */}
-      <div className="shrink-0 px-4 py-2 border-b border-wa-border bg-wa-bg-main flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-9 w-9">
+      <div className="shrink-0 px-6 py-3 border-b border-wa-border bg-wa-bg-main/80 backdrop-blur-md flex items-center justify-between z-10">
+        <div className="flex items-center gap-4">
+          <Avatar className="h-10 w-10 border-2 border-background">
             {chat.profilePicUrl && <AvatarImage src={chat.profilePicUrl} alt={chat.name} />}
-            <AvatarFallback className="bg-wa-surface text-wa-text-main font-semibold text-sm">
+            <AvatarFallback className="bg-wa-surface text-wa-text-main font-bold text-sm">
               {chat.name?.[0]?.toUpperCase() || '?'}
             </AvatarFallback>
           </Avatar>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-semibold text-sm text-wa-text-main">
+              <span className="font-bold text-base text-wa-text-main">
                 {chat.name || chat.remoteJid.split('@')[0]}
               </span>
-              <ExternalLink className="h-3.5 w-3.5 text-wa-text-muted" />
             </div>
-            <p className="text-xs text-wa-text-muted">
+            <p className="text-xs text-wa-text-muted font-medium">
               {chat.remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '')}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-7 text-xs border-wa-border text-wa-text-main hover:bg-wa-surface">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" className="h-8 rounded-full text-xs font-bold border-wa-border text-wa-text-main hover:bg-wa-surface shadow-none">
             Funil de vendas
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-wa-text-muted hover:text-wa-text-main">
-            <MoreVertical className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-wa-text-muted hover:text-wa-text-main">
+            <MoreVertical className="h-5 w-5" />
           </Button>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 bg-wa-bg-subtle">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 z-10">
         {loading ? (
-          <div className="flex items-center justify-center h-32">
-            <Loader2 className="h-6 w-6 animate-spin text-wa-primary" />
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin text-accent" />
           </div>
         ) : Object.keys(groupedMessages).length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-6">
             {Object.entries(groupedMessages).map(([date, msgs]: [string, any]) => (
               <div key={date}>
-                <div className="flex justify-center my-3">
-                  <span className="px-3 py-1 bg-wa-bg-main rounded-md text-xs text-wa-text-muted shadow-sm">
+                <div className="flex justify-center my-6">
+                  <span className="px-4 py-1.5 bg-wa-bg-main/50 backdrop-blur-sm rounded-full text-[11px] font-bold text-wa-text-muted shadow-sm uppercase tracking-wider">
                     {date}
                   </span>
                 </div>
-                <div className="space-y-1.5">
-                  {msgs.map((msg: any, index: number) => (
-                    <div
-                      key={`${msg.key?.id ?? msg.id ?? 'msg'}-${msg.messageTimestamp ?? 't'}-${index}`}
-                      className={cn(
-                        'max-w-[65%] px-3 py-2 rounded-lg shadow-sm',
-                        msg.key?.fromMe
-                          ? 'ml-auto bg-wa-primary text-wa-primary-foreground rounded-br-none'
-                          : 'bg-wa-bg-main text-wa-text-main rounded-bl-none'
-                      )}
-                    >
-                      {!msg.key?.fromMe && msg.pushName && chat.remoteJid.includes('@g.us') && (
-                        <p className="text-xs font-semibold mb-1 text-wa-info">{msg.pushName}</p>
-                      )}
-                      {getMessageContent(msg)}
-                      <span className={cn(
-                        'text-[10px] mt-1 block text-right',
-                        msg.key?.fromMe ? 'text-wa-primary-foreground/70' : 'text-wa-text-muted'
-                      )}>
-                        {formatTime(msg.messageTimestamp)}
-                      </span>
-                    </div>
-                  ))}
+                <div className="space-y-2">
+                  {msgs.map((msg: any, index: number) => {
+                    const isFromMe = msg.key?.fromMe;
+                    return (
+                      <div
+                        key={`${msg.key?.id ?? msg.id ?? 'msg'}-${msg.messageTimestamp ?? 't'}-${index}`}
+                        className={cn(
+                          'max-w-[75%] px-4 py-3 rounded-[1.25rem] wa-message-shadow relative animate-in fade-in slide-in-from-bottom-2 duration-300',
+                          isFromMe
+                            ? 'ml-auto bg-accent text-white rounded-tr-none'
+                            : 'bg-wa-bg-main text-wa-text-main rounded-tl-none'
+                        )}
+                      >
+                        {!isFromMe && msg.pushName && chat.remoteJid.includes('@g.us') && (
+                          <p className="text-xs font-bold mb-1 text-accent">{msg.pushName}</p>
+                        )}
+                        <div className="text-[14px] leading-relaxed">
+                          {getMessageContent(msg)}
+                        </div>
+                        <div className={cn(
+                          'flex items-center justify-end gap-1 mt-1.5',
+                          isFromMe ? 'text-white/80' : 'text-wa-text-muted'
+                        )}>
+                          <span className="text-[10px] font-medium">
+                            {formatTime(msg.messageTimestamp)}
+                          </span>
+                          {isFromMe && <Check className="h-2.5 w-2.5" />}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
-            {/* Invisible element to scroll to */}
             <div ref={messagesEndRef} />
           </div>
         ) : (
-          <div className="flex items-center justify-center h-32 text-wa-text-muted">
-            <p className="text-sm">Nenhuma mensagem encontrada</p>
+          <div className="flex flex-col items-center justify-center h-full text-wa-text-muted opacity-50">
+            <MessageCircle className="h-12 w-12 mb-2" />
+            <p className="text-sm font-medium">Nenhuma mensagem encontrada</p>
           </div>
         )}
       </div>
 
-      {/* Input Area - Always visible at bottom */}
-      <div className="shrink-0 px-4 py-3 border-t border-wa-border bg-wa-bg-main flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-wa-text-muted hover:text-wa-text-main">
-          <Paperclip className="h-5 w-5" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-wa-text-muted hover:text-wa-text-main">
-          <Smile className="h-5 w-5" />
-        </Button>
+      {/* Input Area */}
+      <div className="shrink-0 px-6 py-4 bg-wa-bg-main/80 backdrop-blur-md z-10">
+        <div className="flex items-center gap-3 bg-wa-surface rounded-[1.5rem] px-4 py-2 border border-wa-border/50 shadow-sm transition-all focus-within:ring-1 focus-within:ring-accent/20">
+          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-wa-text-muted hover:text-accent rounded-full transition-colors">
+            <Paperclip className="h-5 w-5" />
+          </Button>
 
-        <input
-          ref={inputRef}
-          type="text"
-          placeholder="Digite uma mensagem"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={sending}
-          className="flex-1 h-10 px-4 bg-wa-surface border border-wa-border rounded-full text-sm text-wa-text-main placeholder:text-wa-text-muted focus:outline-none focus:ring-1 focus:ring-wa-info"
-        />
-
-        {newMessage.trim() ? (
-          <Button
-            onClick={handleSend}
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Digite uma mensagem"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
             disabled={sending}
-            size="icon"
-            className="h-9 w-9 shrink-0 rounded-full bg-wa-info hover:bg-wa-info/90"
-          >
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-          </Button>
-        ) : (
-          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-wa-danger hover:text-wa-danger hover:bg-wa-danger/10">
-            <Mic className="h-5 w-5" />
-          </Button>
-        )}
+            className="flex-1 h-10 bg-transparent text-[14px] text-wa-text-main placeholder:text-wa-text-muted focus:outline-none disabled:opacity-50"
+          />
+
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-wa-text-muted hover:text-accent rounded-full transition-colors">
+              <Smile className="h-5 w-5" />
+            </Button>
+
+            {newMessage.trim() ? (
+              <Button
+                onClick={handleSend}
+                disabled={sending}
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-full bg-accent hover:bg-accent/90 shadow-md text-white transition-all scale-100 hover:scale-105"
+              >
+                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </Button>
+            ) : (
+              <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-accent hover:bg-accent/10 rounded-full transition-colors">
+                <Mic className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

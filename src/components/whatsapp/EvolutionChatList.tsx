@@ -33,7 +33,7 @@ export const EvolutionChatList = ({
     if (!timestamp) return '';
     const date = new Date(timestamp * 1000);
     const today = new Date();
-    
+
     if (date.toDateString() === today.toDateString()) {
       return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     }
@@ -41,26 +41,26 @@ export const EvolutionChatList = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-wa-bg-main">
       {/* Search & Filters */}
-      <div className="shrink-0 p-3 space-y-2 border-b border-wa-border bg-wa-bg-main">
+      <div className="shrink-0 p-4 space-y-3 bg-wa-bg-main">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-wa-text-muted" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-wa-text-muted" />
           <Input
             placeholder="Pesquisar por nome ou número"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9 bg-wa-surface border-wa-border rounded-md text-sm placeholder:text-wa-text-muted"
+            className="pl-10 h-11 bg-wa-surface border-none rounded-full text-sm placeholder:text-wa-text-muted transition-all focus-visible:ring-1 focus-visible:ring-accent"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 px-1">
           <button
             onClick={() => setFilter('all')}
             className={cn(
-              'px-3 py-1 rounded-full text-xs font-medium transition-colors',
+              'px-4 py-1.5 rounded-full text-xs font-semibold transition-all',
               filter === 'all'
-                ? 'bg-wa-text-main text-wa-bg-main'
-                : 'bg-wa-surface text-wa-text-main hover:bg-wa-border'
+                ? 'bg-accent text-white shadow-sm'
+                : 'bg-wa-surface text-wa-text-muted hover:bg-wa-border/50'
             )}
           >
             Tudo
@@ -68,10 +68,10 @@ export const EvolutionChatList = ({
           <button
             onClick={() => setFilter('mine')}
             className={cn(
-              'px-3 py-1 rounded-full text-xs font-medium transition-colors',
+              'px-4 py-1.5 rounded-full text-xs font-semibold transition-all',
               filter === 'mine'
-                ? 'bg-wa-text-main text-wa-bg-main'
-                : 'bg-wa-surface text-wa-text-main hover:bg-wa-border'
+                ? 'bg-accent text-white shadow-sm'
+                : 'bg-wa-surface text-wa-text-muted hover:bg-wa-border/50'
             )}
           >
             Minhas
@@ -80,51 +80,56 @@ export const EvolutionChatList = ({
       </div>
 
       {/* Chat List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-2">
         {filteredChats.length > 0 ? (
           filteredChats.map((chat) => (
             <button
               key={chat.id}
               onClick={() => onSelect(chat)}
               className={cn(
-                'w-full px-3 py-2.5 flex items-center gap-3 border-b border-wa-border/50 transition-colors text-left',
+                'w-full mb-1 px-4 py-3 flex items-center gap-3 rounded-[1.25rem] transition-all text-left',
                 selectedId === chat.id
-                  ? 'bg-wa-surface'
-                  : 'bg-wa-bg-main hover:bg-wa-surface/50'
+                  ? 'bg-wa-surface border-none'
+                  : 'bg-transparent hover:bg-wa-surface/50'
               )}
             >
-              <Avatar className="h-10 w-10 shrink-0">
-                {chat.profilePicUrl && (
-                  <AvatarImage src={chat.profilePicUrl} alt={chat.name} />
+              <div className="relative">
+                <Avatar className="h-12 w-12 shrink-0 border-2 border-background">
+                  {chat.profilePicUrl && (
+                    <AvatarImage src={chat.profilePicUrl} alt={chat.name} />
+                  )}
+                  <AvatarFallback className="bg-wa-surface text-wa-text-main font-bold text-sm">
+                    {chat.name?.[0]?.toUpperCase() || '?'}
+                  </AvatarFallback>
+                </Avatar>
+                {chat.unreadCount && chat.unreadCount > 0 && (
+                  <div className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-accent border-2 border-white" />
                 )}
-                <AvatarFallback className="bg-wa-surface text-wa-text-main font-medium text-sm">
-                  {chat.name?.[0]?.toUpperCase() || '?'}
-                </AvatarFallback>
-              </Avatar>
+              </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className={cn(
                     'text-sm truncate text-wa-text-main',
-                    chat.unreadCount && chat.unreadCount > 0 ? 'font-bold' : 'font-medium'
+                    chat.unreadCount && chat.unreadCount > 0 ? 'font-bold' : 'font-semibold'
                   )}>
                     {chat.name || formatPhone(chat.remoteJid)}
                   </span>
-                  <span className="text-[11px] text-wa-text-muted ml-2 shrink-0">
+                  <span className="text-[10px] text-wa-text-muted ml-2 shrink-0">
                     {formatTimestamp(chat.lastMessageTimestamp)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between mt-0.5">
                   <p className={cn(
                     'text-xs truncate max-w-[180px]',
-                    chat.unreadCount && chat.unreadCount > 0 
-                      ? 'text-wa-text-main' 
+                    chat.unreadCount && chat.unreadCount > 0
+                      ? 'text-wa-text-main font-medium'
                       : 'text-wa-text-muted'
                   )}>
                     {chat.lastMessage || '\u00A0'}
                   </p>
                   {chat.unreadCount && chat.unreadCount > 0 && (
-                    <span className="ml-2 shrink-0 h-5 min-w-5 px-1 flex items-center justify-center rounded-full bg-wa-primary text-wa-primary-foreground text-[10px] font-bold">
+                    <span className="ml-2 shrink-0 h-5 min-w-5 px-1 flex items-center justify-center rounded-full bg-accent text-white text-[10px] font-bold">
                       {chat.unreadCount}
                     </span>
                   )}
@@ -134,7 +139,7 @@ export const EvolutionChatList = ({
           ))
         ) : (
           <div className="p-8 text-center text-wa-text-muted">
-            <p className="text-sm">Nenhuma conversa encontrada</p>
+            <p className="text-sm italic">Nenhuma conversa encontrada</p>
           </div>
         )}
       </div>
