@@ -58,7 +58,7 @@ export function AppSidebar() {
 
         <SidebarGroup>
           {!collapsed && (
-            <SidebarGroupLabel className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <SidebarGroupLabel className="px-4 text-xs font-semibold uppercase tracking-wider" style={{ color: '#334155', fontWeight: 700 }}>
               Menu Principal
             </SidebarGroupLabel>
           )}
@@ -67,19 +67,30 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild className="h-11">
-                    <NavLink 
-                      to={item.url} 
-                      end 
+                    <NavLink
+                      to={item.url}
+                      end
                       className={({ isActive }) => cn(
                         "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
                         "text-sm font-medium",
-                        isActive 
-                          ? "bg-primary text-primary-foreground shadow-sm" 
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                       )}
                     >
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
-                      {!collapsed && <span className="truncate">{item.title}</span>}
+                      {({ isActive }) => (
+                        <>
+                          <item.icon className="h-5 w-5 flex-shrink-0" />
+                          {!collapsed && (
+                            <span
+                              className="truncate"
+                              style={{ color: isActive ? 'inherit' : '#0f172a', fontWeight: 500 }}
+                            >
+                              {item.title}
+                            </span>
+                          )}
+                        </>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
