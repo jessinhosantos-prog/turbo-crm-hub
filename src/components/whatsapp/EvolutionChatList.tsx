@@ -129,9 +129,9 @@ export const EvolutionChatList = ({
                     {chat.lastMessage || '\u00A0'}
                   </p>
                   {(chat.unreadCount ?? 0) > 0 && (
-                    <span className="ml-2 shrink-0 h-5 min-w-5 px-1 flex items-center justify-center rounded-full bg-accent text-white text-[10px] font-bold">
+                    <div className="ml-2 shrink-0 h-6 min-w-[24px] flex items-center justify-center rounded-full bg-accent text-white text-[12px] font-bold shadow-sm">
                       {chat.unreadCount}
-                    </span>
+                    </div>
                   )}
                 </div>
               </div>
