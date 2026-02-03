@@ -80,7 +80,10 @@ export function AppSidebar() {
                     >
                       {({ isActive }) => (
                         <>
-                          <item.icon className="h-5 w-5 flex-shrink-0" />
+                          <item.icon
+                            className="h-5 w-5 flex-shrink-0"
+                            style={{ color: isActive ? 'inherit' : '#0f172a' }}
+                          />
                           {!collapsed && (
                             <span
                               className="truncate"
