@@ -103,7 +103,9 @@ export const EvolutionChatList = ({
                   </AvatarFallback>
                 </Avatar>
                 {(chat.unreadCount ?? 0) > 0 && (
-                  <div className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-accent border-2 border-white" />
+                  <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-wa-primary border-2 border-background shadow-md flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-white">{(chat.unreadCount ?? 0) > 9 ? '9+' : chat.unreadCount}</span>
+                  </div>
                 )}
               </div>
 
@@ -129,7 +131,7 @@ export const EvolutionChatList = ({
                     {chat.lastMessage || '\u00A0'}
                   </p>
                   {(chat.unreadCount ?? 0) > 0 && (
-                    <div className="ml-2 shrink-0 h-6 min-w-[24px] flex items-center justify-center rounded-full bg-accent text-white text-[12px] font-bold shadow-sm">
+                    <div className="ml-2 shrink-0 h-7 min-w-[28px] px-2 flex items-center justify-center rounded-full bg-wa-primary text-white text-[13px] font-bold shadow-lg animate-pulse">
                       {chat.unreadCount}
                     </div>
                   )}
