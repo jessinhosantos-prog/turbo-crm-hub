@@ -21,6 +21,7 @@ export default function WhatsAppPage() {
     fetchChats,
     fetchMessages,
     sendMessage,
+    markChatAsRead,
     selectInstance,
     fetchInstances,
     markChatAsOpen,
