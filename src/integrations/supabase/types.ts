@@ -47,8 +47,11 @@ export type Database = {
           contact_phone: string
           created_at: string
           id: string
+          instance_name: string | null
+          is_open: boolean | null
           last_message: string | null
           last_message_at: string | null
+          remote_jid: string | null
           unread_count: number | null
           updated_at: string
           user_id: string
@@ -58,8 +61,11 @@ export type Database = {
           contact_phone: string
           created_at?: string
           id?: string
+          instance_name?: string | null
+          is_open?: boolean | null
           last_message?: string | null
           last_message_at?: string | null
+          remote_jid?: string | null
           unread_count?: number | null
           updated_at?: string
           user_id: string
@@ -69,8 +75,11 @@ export type Database = {
           contact_phone?: string
           created_at?: string
           id?: string
+          instance_name?: string | null
+          is_open?: boolean | null
           last_message?: string | null
           last_message_at?: string | null
+          remote_jid?: string | null
           unread_count?: number | null
           updated_at?: string
           user_id?: string

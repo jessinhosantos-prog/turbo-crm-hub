@@ -1,8 +1,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Allowed actions whitelist
+const ALLOWED_ACTIONS = [
+  'createInstance', 'getQrCode', 'getInstanceStatus', 'fetchInstances',
+  'deleteInstance', 'getChats', 'getMessages', 'getBase64FromMediaMessage',
+  'sendMessage', 'getProfilePic', 'fetchPresence', 'logout'
+] as const;
+
+type AllowedAction = typeof ALLOWED_ACTIONS[number];
+
+// Validate instance name: alphanumeric, underscore, hyphen only, max 50 chars
+const isValidInstanceName = (name: string): boolean => {
+  return /^[a-zA-Z0-9_-]{1,50}$/.test(name);
 };
 
 serve(async (req) => {
@@ -12,6 +27,33 @@ serve(async (req) => {
   }
 
   try {
+    // === AUTHENTICATION CHECK ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized', success: false }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized', success: false }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    const userId = claimsData.claims.sub;
+    console.log(`Authenticated user: ${userId}`);
+
     const EVOLUTION_API_URL = Deno.env.get('EVOLUTION_API_URL');
     const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
 
@@ -25,9 +67,37 @@ serve(async (req) => {
     // Remove trailing slash if present
     const baseUrl = EVOLUTION_API_URL.replace(/\/$/, '');
 
-    const { action, instanceName, data } = await req.json();
+    // === INPUT VALIDATION ===
+    let requestBody: { action?: string; instanceName?: string; data?: unknown };
+    try {
+      requestBody = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON body', success: false }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
+    const { action, instanceName, data } = requestBody;
+
+    // Validate action
+    if (!action || !ALLOWED_ACTIONS.includes(action as AllowedAction)) {
+      return new Response(JSON.stringify({ error: 'Invalid or missing action', success: false }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
+    // Validate instance name if provided
     const instance = instanceName || 'crm-turbo';
-    console.log(`Evolution API - Action: ${action}, Instance: ${instance}`);
+    if (!isValidInstanceName(instance)) {
+      return new Response(JSON.stringify({ error: 'Invalid instance name format', success: false }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
+    console.log(`Evolution API - Action: ${action}, Instance: ${instance}, User: ${userId}`);
 
     let endpoint = '';
     let method = 'GET';
@@ -79,10 +149,11 @@ serve(async (req) => {
       case 'getMessages':
         endpoint = `/chat/findMessages/${instance}`;
         method = 'POST';
+        const msgData = data as { remoteJid?: string } | undefined;
         body = JSON.stringify({
           where: {
             key: {
-              remoteJid: data?.remoteJid,
+              remoteJid: msgData?.remoteJid,
             },
           },
           limit: 50,
@@ -94,34 +165,38 @@ serve(async (req) => {
       case 'getBase64FromMediaMessage':
         endpoint = `/chat/getBase64FromMediaMessage/${instance}`;
         method = 'POST';
+        const mediaData = data as { message?: unknown; convertToMp4?: boolean } | undefined;
         body = JSON.stringify({
-          message: data?.message,
-          convertToMp4: data?.convertToMp4 ?? true,
+          message: mediaData?.message,
+          convertToMp4: mediaData?.convertToMp4 ?? true,
         });
         break;
 
       case 'sendMessage':
         endpoint = `/message/sendText/${instance}`;
         method = 'POST';
+        const sendData = data as { number?: string; text?: string } | undefined;
         body = JSON.stringify({
-          number: data?.number,
-          text: data?.text,
+          number: sendData?.number,
+          text: sendData?.text,
         });
         break;
 
       case 'getProfilePic':
         endpoint = `/chat/fetchProfilePictureUrl/${instance}`;
         method = 'POST';
+        const picData = data as { number?: string } | undefined;
         body = JSON.stringify({
-          number: data?.number,
+          number: picData?.number,
         });
         break;
 
       case 'fetchPresence':
         endpoint = `/chat/fetchPresence/${instance}`;
         method = 'POST';
+        const presenceData = data as { number?: string } | undefined;
         body = JSON.stringify({
-          number: data?.number,
+          number: presenceData?.number,
         });
         break;
 
@@ -212,9 +287,10 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Evolution API Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        error: errorMessage,
         success: false
       }),
       {
