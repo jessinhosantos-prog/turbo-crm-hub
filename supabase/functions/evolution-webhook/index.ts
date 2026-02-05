@@ -12,19 +12,63 @@ serve(async (req) => {
     }
 
     try {
+        // === WEBHOOK AUTHENTICATION ===
+        // Validate webhook secret to prevent unauthorized webhook calls
+        const webhookSecret = Deno.env.get('EVOLUTION_WEBHOOK_SECRET');
+        if (webhookSecret) {
+            const providedSecret = req.headers.get('x-webhook-secret') || req.headers.get('X-Webhook-Secret');
+            if (providedSecret !== webhookSecret) {
+                console.error('Webhook authentication failed: invalid secret');
+                return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                    status: 401
+                })
+            }
+        }
+
         const supabaseClient = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         )
 
-        const body = await req.json()
+        let body: { event?: string; instance?: string; data?: unknown };
+        try {
+            body = await req.json()
+        } catch {
+            return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 400
+            })
+        }
+
         console.log('Webhook received:', JSON.stringify(body, null, 2))
 
         const { event, instance, data } = body
 
+        // Validate event type
+        if (!event || typeof event !== 'string') {
+            return new Response(JSON.stringify({ error: 'Missing or invalid event type' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 400
+            })
+        }
+
+        // Validate instance name format (alphanumeric, underscore, hyphen only)
+        if (instance && !/^[a-zA-Z0-9_-]{1,50}$/.test(instance)) {
+            return new Response(JSON.stringify({ error: 'Invalid instance name format' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 400
+            })
+        }
+
         // Handle messages.upsert event
         if (event === 'messages.upsert') {
-            const message = data?.messages?.[0] || data
+            const dataObj = data as { messages?: unknown[] } | undefined;
+            const message = (dataObj?.messages?.[0] || data) as {
+                key?: { remoteJid?: string; fromMe?: boolean };
+                message?: { conversation?: string; extendedTextMessage?: { text?: string } };
+                pushName?: string;
+            } | undefined;
 
             if (!message) {
                 return new Response(JSON.stringify({ error: 'No message data' }), {
@@ -36,8 +80,17 @@ serve(async (req) => {
             const remoteJid = message.key?.remoteJid
             const fromMe = message.key?.fromMe === true
 
+            // Validate remoteJid format
             if (!remoteJid) {
                 return new Response(JSON.stringify({ error: 'No remoteJid' }), {
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                    status: 400
+                })
+            }
+
+            // Basic validation: remoteJid should look like a WhatsApp JID
+            if (!remoteJid.includes('@s.whatsapp.net') && !remoteJid.includes('@g.us')) {
+                return new Response(JSON.stringify({ error: 'Invalid remoteJid format' }), {
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                     status: 400
                 })
@@ -53,11 +106,35 @@ serve(async (req) => {
                 messageText = '[Mídia]'
             }
 
+            // Sanitize message text (limit length, remove control characters)
+            messageText = messageText.substring(0, 5000).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+
+            // === USER MAPPING ===
+            // Try to find the user_id associated with this instance
+            let mappedUserId = '00000000-0000-0000-0000-000000000000'; // Default fallback
+            
+            if (instance) {
+                // Look up user by instance_name in existing conversations
+                const { data: existingUserConv } = await supabaseClient
+                    .from('whatsapp_conversations')
+                    .select('user_id')
+                    .eq('instance_name', instance)
+                    .not('user_id', 'eq', '00000000-0000-0000-0000-000000000000')
+                    .limit(1)
+                    .single();
+                
+                if (existingUserConv?.user_id) {
+                    mappedUserId = existingUserConv.user_id;
+                    console.log(`Mapped instance ${instance} to user ${mappedUserId}`);
+                }
+            }
+
             // Get or create conversation
             const { data: existingConv, error: fetchError } = await supabaseClient
                 .from('whatsapp_conversations')
                 .select('*')
                 .eq('remote_jid', remoteJid)
+                .eq('instance_name', instance || '')
                 .single()
 
             if (fetchError && fetchError.code !== 'PGRST116') {
@@ -97,13 +174,13 @@ serve(async (req) => {
                     .insert({
                         remote_jid: remoteJid,
                         contact_phone: remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', ''),
-                        contact_name: message.pushName || null,
+                        contact_name: (message.pushName || '').substring(0, 255) || null,
                         last_message: messageText,
                         last_message_at: new Date().toISOString(),
                         unread_count: fromMe ? 0 : 1, // Only increment if not from me
                         is_open: false,
                         instance_name: instance,
-                        user_id: '00000000-0000-0000-0000-000000000000', // TODO: Map to actual user
+                        user_id: mappedUserId,
                     })
 
                 if (insertError) {
@@ -123,8 +200,9 @@ serve(async (req) => {
         )
     } catch (error) {
         console.error('Webhook error:', error)
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({ error: errorMessage }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                 status: 500
