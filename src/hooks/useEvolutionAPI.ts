@@ -10,6 +10,7 @@ export interface EvolutionChat {
   profilePicUrl?: string;
   lastMessage?: string;
   lastMessageTimestamp?: number;
+  isFromMe?: boolean;
   unreadCount?: number;
 }
 
@@ -335,12 +336,18 @@ export const useEvolutionAPI = (defaultInstanceName = 'crm-turbo') => {
             });
           }
 
+          // Extract timestamp
+          const messageTimestamp = lastMsg?.messageTimestamp || 0;
+          const isFromMe = lastMsg?.key?.fromMe === true;
+
           return {
             id: remoteJid,
             remoteJid: remoteJid,
             name: name,
             profilePicUrl: chat.profilePicUrl || null,
             lastMessage: lastMsgText.substring(0, 100), // Truncate long messages
+            lastMessageTimestamp: messageTimestamp,
+            isFromMe: isFromMe,
             unreadCount: unreadCount,
           };
         });
@@ -357,21 +364,24 @@ export const useEvolutionAPI = (defaultInstanceName = 'crm-turbo') => {
         const lastSeenMessages = localStorage.getItem('whatsapp_last_seen_messages');
         const lastSeenMap = lastSeenMessages ? JSON.parse(lastSeenMessages) : {};
 
+        // Flag para detectar se é a primeira carga (não temos referências ainda)
+        const isFirstLoad = !lastSeenMessages || Object.keys(lastSeenMap).length === 0;
+
         formattedChats.forEach(chat => {
           const lastMessageTimestamp = chat.lastMessageTimestamp || 0;
           const lastSeenTimestamp = lastSeenMap[chat.remoteJid] || 0;
 
-          // Se há uma mensagem nova
+          // Na PRIMEIRA CARGA: apenas salvar timestamps sem incrementar contador
+          if (isFirstLoad || lastSeenTimestamp === 0) {
+            lastSeenMap[chat.remoteJid] = lastMessageTimestamp;
+            // NÃO incrementar - apenas registrar a referência inicial
+            return;
+          }
+
+          // Se há uma mensagem GENUINAMENTE NOVA (timestamp maior que o registrado)
           if (lastMessageTimestamp > lastSeenTimestamp) {
-            // Buscar a última mensagem para ver se é do usuário ou não
-            const lastMsg = chatList.find((c: any) => {
-              const jid = c.remoteJid || c.lastMessage?.key?.remoteJid;
-              return jid === chat.remoteJid;
-            });
-
-            const isFromMe = lastMsg?.lastMessage?.key?.fromMe === true;
-
-            if (!isFromMe) {
+            // Usar o isFromMe já extraído do chat formatado
+            if (!chat.isFromMe) {
               // Incrementar contador apenas se não for mensagem do usuário
               const currentCount = unreadMap[chat.remoteJid] || 0;
               unreadMap[chat.remoteJid] = currentCount + 1;
@@ -389,21 +399,55 @@ export const useEvolutionAPI = (defaultInstanceName = 'crm-turbo') => {
 
         console.log('Unread counts from localStorage:', unreadMap);
 
-        // Aplicar unread counts aos chats
+        // 🔥 BUSCAR UNREAD_COUNT DO SUPABASE (fonte de verdade)
+        let supabaseUnreadMap: Record<string, number> = {};
+        try {
+          const { data: supabaseConvs, error: supabaseError } = await supabase
+            .from('whatsapp_conversations')
+            .select('remote_jid, unread_count, is_open')
+            .order('last_message_at', { ascending: false });
+
+          if (!supabaseError && supabaseConvs) {
+            supabaseUnreadMap = Object.fromEntries(
+              supabaseConvs.map(c => [c.remote_jid, c.unread_count || 0])
+            );
+            console.log('Unread counts from Supabase:', supabaseUnreadMap);
+          } else if (supabaseError) {
+            console.warn('Error fetching from Supabase, using localStorage fallback:', supabaseError);
+          }
+        } catch (supaErr) {
+          console.warn('Supabase fetch failed, using localStorage fallback:', supaErr);
+        }
+
+        // Aplicar unread counts aos chats (Supabase tem prioridade, localStorage é fallback)
         const mergedChats = formattedChats.map(chat => {
-          const unreadCount = unreadMap[chat.remoteJid] || 0;
+          // Prioridade: Supabase > localStorage > 0
+          const unreadCount = supabaseUnreadMap[chat.remoteJid] ?? unreadMap[chat.remoteJid] ?? 0;
           return {
             ...chat,
             unreadCount: unreadCount,
           };
         });
 
-        console.log('Chats with unread counts:', mergedChats.filter(c => (c.unreadCount ?? 0) > 0).map(c => ({ name: c.name, unread: c.unreadCount })));
+        // 🔥 ORDENAÇÃO: não lidas primeiro, depois por data (igual WhatsApp Web)
+        const sortedChats = mergedChats.sort((a, b) => {
+          const aUnread = a.unreadCount ?? 0;
+          const bUnread = b.unreadCount ?? 0;
 
-        setChats(mergedChats);
+          // Primeiro: chats com mensagens não lidas vêm primeiro
+          if (aUnread > 0 && bUnread === 0) return -1;
+          if (aUnread === 0 && bUnread > 0) return 1;
+
+          // Depois: mais recentes primeiro
+          return (b.lastMessageTimestamp || 0) - (a.lastMessageTimestamp || 0);
+        });
+
+        console.log('Chats with unread counts (sorted):', sortedChats.filter(c => (c.unreadCount ?? 0) > 0).map(c => ({ name: c.name, unread: c.unreadCount })));
+
+        setChats(sortedChats);
 
         // Fetch profile pictures in background
-        const candidates = mergedChats
+        const candidates = sortedChats
           .filter((c) => !c.profilePicUrl && !!c.remoteJid)
           .slice(0, 80);
 
@@ -414,7 +458,7 @@ export const useEvolutionAPI = (defaultInstanceName = 'crm-turbo') => {
           setChats((prev) => prev.map((c) => (c.id === chat.id ? { ...c, profilePicUrl: picUrl } : c)));
         });
 
-        return mergedChats;
+        return sortedChats;
       } catch (error) {
         console.error('Error with localStorage unread counts:', error);
       }
@@ -593,34 +637,51 @@ export const useEvolutionAPI = (defaultInstanceName = 'crm-turbo') => {
     };
   }, [isConnected, currentInstance, fetchChats]);
 
-  // 🔥 Marcar conversa como aberta (zera unread_count) - usando localStorage
+  // 🔥 Marcar conversa como aberta (zera unread_count) - usando Supabase edge function
   const markChatAsOpen = useCallback(async (remoteJid: string) => {
     try {
-      // Buscar mapa atual
-      const savedUnreadCounts = localStorage.getItem('whatsapp_unread_counts');
-      const unreadMap = savedUnreadCounts ? JSON.parse(savedUnreadCounts) : {};
+      console.log('Opening chat (Supabase):', remoteJid);
 
-      // Zerar contador
-      unreadMap[remoteJid] = 0;
+      // Chamar edge function para marcar chat como aberto
+      const { error } = await supabase.functions.invoke('chat-state', {
+        body: { remoteJid, isOpen: true }
+      });
 
-      // Salvar
-      localStorage.setItem('whatsapp_unread_counts', JSON.stringify(unreadMap));
+      if (error) {
+        console.error('Error calling chat-state function:', error);
+      }
 
-      console.log('Chat marked as open (localStorage):', remoteJid);
-
-      // Atualizar estado local
+      // Atualizar estado local imediatamente (otimistic update)
       setChats(prev => prev.map(c =>
         c.remoteJid === remoteJid ? { ...c, unreadCount: 0 } : c
       ));
+
+      // Também atualizar localStorage como fallback
+      const savedUnreadCounts = localStorage.getItem('whatsapp_unread_counts');
+      const unreadMap = savedUnreadCounts ? JSON.parse(savedUnreadCounts) : {};
+      unreadMap[remoteJid] = 0;
+      localStorage.setItem('whatsapp_unread_counts', JSON.stringify(unreadMap));
     } catch (error) {
       console.error('Error marking chat as open:', error);
     }
   }, []);
 
-  // 🔥 Marcar conversa como fechada - localStorage (não faz nada, apenas log)
+  // 🔥 Marcar conversa como fechada - usando Supabase edge function
   const markChatAsClosed = useCallback(async (remoteJid: string) => {
-    console.log('Chat marked as closed (localStorage):', remoteJid);
-    // Não precisa fazer nada, o contador só incrementa quando recebe mensagem
+    try {
+      console.log('Closing chat (Supabase):', remoteJid);
+
+      // Chamar edge function para marcar chat como fechado
+      const { error } = await supabase.functions.invoke('chat-state', {
+        body: { remoteJid, isOpen: false }
+      });
+
+      if (error) {
+        console.error('Error calling chat-state function:', error);
+      }
+    } catch (error) {
+      console.error('Error marking chat as closed:', error);
+    }
   }, []);
 
   return {
