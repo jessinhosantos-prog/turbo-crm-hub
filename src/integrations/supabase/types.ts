@@ -41,6 +41,223 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunities: {
+        Row: {
+          archived: boolean | null
+          assigned_to: string | null
+          contact_id: string | null
+          created_at: string
+          id: string
+          lead_name: string
+          observation: string | null
+          priority: string | null
+          status: string
+          total_value: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean | null
+          assigned_to?: string | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          lead_name: string
+          observation?: string | null
+          priority?: string | null
+          status?: string
+          total_value?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived?: boolean | null
+          assigned_to?: string | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          lead_name?: string
+          observation?: string | null
+          priority?: string | null
+          status?: string
+          total_value?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opportunity_attachments: {
+        Row: {
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          opportunity_id: string
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          opportunity_id: string
+          uploaded_at?: string
+          user_id: string
+        }
+        Update: {
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          opportunity_id?: string
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_attachments_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opportunity_products: {
+        Row: {
+          created_at: string
+          id: string
+          opportunity_id: string
+          price: number
+          product_name: string
+          quantity: number
+          total: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          opportunity_id: string
+          price?: number
+          product_name: string
+          quantity?: number
+          total?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          opportunity_id?: string
+          price?: number
+          product_name?: string
+          quantity?: number
+          total?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_products_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opportunity_tasks: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          id: string
+          opportunity_id: string
+          scheduled_date: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          opportunity_id: string
+          scheduled_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          opportunity_id?: string
+          scheduled_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_tasks_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opportunity_timeline: {
+        Row: {
+          action_type: string
+          comment: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          opportunity_id: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          opportunity_id: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          opportunity_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_timeline_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_conversations: {
         Row: {
           contact_name: string | null
