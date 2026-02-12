@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useEvolutionAPI, EvolutionChat } from '@/hooks/useEvolutionAPI';
 import { QRCodeConnection } from '@/components/whatsapp/QRCodeConnection';
+import { WhatsAppDiagnostic } from '@/components/whatsapp/WhatsAppDiagnostic';
 import { EvolutionChatList } from '@/components/whatsapp/EvolutionChatList';
 import { EvolutionChatWindow } from '@/components/whatsapp/EvolutionChatWindow';
 import { InstanceSelector } from '@/components/whatsapp/InstanceSelector';
@@ -68,6 +69,10 @@ export default function WhatsAppPage() {
             qrCode={qrCode}
             onConnect={() => connect()}
             onDisconnect={disconnect}
+          />
+          <WhatsAppDiagnostic
+            instanceName={currentInstance?.name || 'crm-turbo'}
+            onInstanceReset={fetchInstances}
           />
         </div>
       </div>
